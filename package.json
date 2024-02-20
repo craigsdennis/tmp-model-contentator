@@ -1,0 +1,20 @@
+{
+  "name": "model-contentanator",
+  "version": "1.0.0",
+  "description": "Generates content files for models in docs based on the config",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "docs": "npx ts-node ./scripts/gen-simple-docs.ts"
+  },
+  "author": "Craig Dennis <craig@cloudflare.com>",
+  "license": "ISC",
+  "dependencies": {
+    "json-to-pretty-yaml": "^1.2.2",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19"
+  }
+}
