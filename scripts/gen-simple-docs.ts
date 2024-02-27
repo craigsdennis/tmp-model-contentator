@@ -21,6 +21,7 @@ async function fetchModels() {
 }
 
 function taskTypeFromName(taskName) {
+  // Kebab case
   return taskName.toLowerCase().split(" ").join("-");
 }
 
@@ -29,11 +30,11 @@ function taskTypeFromName(taskName) {
   console.log(`Found ${models.length} models`);
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
-    // kebab-case
     const params = {
       model: model,
       task_type: taskTypeFromName(model.task.name),
       model_display_name: model.name.split("/").at(-1),
+      layout: "model",
     };
     params["title"] = params.model_display_name;
     registry[`${params.model_display_name}.md`] = YAML.stringify(params);
@@ -42,27 +43,9 @@ function taskTypeFromName(taskName) {
   const taskTypes = new Set<string>(
     models.map((model) => taskTypeFromName(model.task.name))
   );
-  console.log(models);
-  console.log(taskTypes);
-  const expectedTaskFiles = ["code-examples.md"];
-  for (const taskFile of expectedTaskFiles) {
-    for (const taskType of taskTypes) {
-      const expectedFile = path.join(
-        DOCS_ROOT_PATH,
-        "layouts",
-        "partials",
-        "models",
-        taskType,
-        taskFile
-      );
-      if (!fs.existsSync(expectedFile)) {
-        console.warn(`You'll need to create ${expectedFile}`);
-      }
-    }
-    for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
-      const filePath = path.join("/tmp", fileName);
-      fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n\n{{% model-display %}}`)
-      console.log(`Wrote ${filePath}`);
-    }
+  for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
+    const filePath = path.join("/tmp", fileName);
+    fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n\nTODO: JSON Schemas`)
+    console.log(`Wrote ${filePath}`);
   }
 })();
