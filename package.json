@@ -6,11 +6,12 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
-    "docs": "npx ts-node ./scripts/gen-simple-docs.ts"
+    "docs": "npx tsx ./scripts/gen-simple-docs.ts"
   },
   "author": "Craig Dennis <craig@cloudflare.com>",
   "license": "ISC",
   "dependencies": {
+    "@cloudflare/ai": "^1.0.52",
     "json-to-pretty-yaml": "^1.2.2",
     "typescript": "^5.3.3"
   },
