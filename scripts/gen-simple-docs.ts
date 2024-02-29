@@ -3,9 +3,9 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { modelMappings } from "@cloudflare/ai";
 
-
 // pwd in the root of your cloudflare-docs
 const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
+const SHOULD_FILTER_OUT_EXPERIMENTAL = true;
 
 async function fetchModels() {
   const response = await fetch(
@@ -37,8 +37,8 @@ function getSchemaDefinitions() {
       schemaDefinitions[task] = {
         input: JSON.stringify(cls.schema.input, null, "  "),
         output: JSON.stringify(cls.schema.output, null, "  "),
-      }
-    } catch(err) {
+      };
+    } catch (err) {
       console.error(err);
     }
   }
@@ -51,7 +51,7 @@ function getSchemaDefinitions() {
   const schemaDefinitions = getSchemaDefinitions();
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
-    if (model.tags.includes("experimental")) {
+    if (SHOULD_FILTER_OUT_EXPERIMENTAL && model.tags.includes("experimental")) {
       console.warn(`Ignoring experimental model ${model.name}`);
       return registry;
     }
@@ -70,10 +70,7 @@ function getSchemaDefinitions() {
 
   for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
     const filePath = path.join("/tmp", fileName);
-    fs.writeFileSync(
-      `${filePath}`,
-      `---\n${frontMatter}\n---\n`
-    );
+    fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n`);
     console.log(`Wrote ${filePath}`);
   }
 })();
