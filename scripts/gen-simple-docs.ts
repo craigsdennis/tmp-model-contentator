@@ -51,6 +51,10 @@ function getSchemaDefinitions() {
   const schemaDefinitions = getSchemaDefinitions();
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
+    if (model.tags.includes("experimental")) {
+      console.warn(`Ignoring experimental model ${model.name}`);
+      return registry;
+    }
     const taskType = taskTypeFromName(model.task.name);
     const params = {
       model: model,
