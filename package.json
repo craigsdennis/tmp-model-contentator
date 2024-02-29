@@ -11,7 +11,7 @@
   "author": "Craig Dennis <craig@cloudflare.com>",
   "license": "ISC",
   "dependencies": {
-    "@cloudflare/ai": "^1.0.52",
+    "@cloudflare/ai": "^1.0.53",
     "json-to-pretty-yaml": "^1.2.2",
     "typescript": "^5.3.3"
   },

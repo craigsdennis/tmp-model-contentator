@@ -35,8 +35,8 @@ function getSchemaDefinitions() {
       const AiClass = modelMappings[task].class;
       const cls = new AiClass();
       schemaDefinitions[task] = {
-        input: JSON.stringify(cls.schema.input),
-        output: JSON.stringify(cls.schema.output),
+        input: JSON.stringify(cls.schema.input, null, "  "),
+        output: JSON.stringify(cls.schema.output, null, "  "),
       }
     } catch(err) {
       console.error(err);
