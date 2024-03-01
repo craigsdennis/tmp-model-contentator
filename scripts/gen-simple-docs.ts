@@ -2,6 +2,8 @@ import * as YAML from "json-to-pretty-yaml";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { modelMappings } from "@cloudflare/ai";
+import 'dotenv/config';
+
 
 // pwd in the root of your cloudflare-docs
 const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
@@ -45,6 +47,16 @@ function getSchemaDefinitions() {
   return schemaDefinitions;
 }
 
+function isBetaTrue(modelInfo): boolean {
+  const betaProperty = modelInfo.properties.find(
+    (property) => property.property_id === "beta"
+  );
+  if (betaProperty) {
+    return betaProperty.value.toLowerCase() === "true";
+  }
+  return false; // If beta property is not found, assume false
+}
+
 (async () => {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
@@ -61,6 +73,7 @@ function getSchemaDefinitions() {
       task_type: taskType,
       model_display_name: model.name.split("/").at(-1),
       layout: "model",
+      weight: isBetaTrue(model) ? 0 : 100,
     };
     params["title"] = params.model_display_name;
     params["json_schema"] = schemaDefinitions[taskType] || "";
@@ -68,8 +81,9 @@ function getSchemaDefinitions() {
     return registry;
   }, {});
 
+  const modelContentPath = path.join(DOCS_ROOT_PATH, "content", "workers-ai", "models");
   for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
-    const filePath = path.join("/tmp", fileName);
+    const filePath = path.join(modelContentPath, fileName);
     fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n`);
     console.log(`Wrote ${filePath}`);
   }

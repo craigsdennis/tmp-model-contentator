@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@cloudflare/ai": "^1.0.53",
+    "dotenv": "^16.4.5",
     "json-to-pretty-yaml": "^1.2.2",
     "typescript": "^5.3.3"
   },
