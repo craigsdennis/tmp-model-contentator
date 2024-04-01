@@ -57,6 +57,16 @@ function isBetaTrue(modelInfo): boolean {
   return false; // If beta property is not found, assume false
 }
 
+function filterProperty(model) {
+  const clonedModel = { ...model };
+
+  clonedModel.properties = clonedModel.properties.filter(
+    (prop) => prop.property_id !== "constellation_config"
+  );
+
+  return clonedModel;
+}
+
 (async () => {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
@@ -69,7 +79,7 @@ function isBetaTrue(modelInfo): boolean {
     }
     const taskType = taskTypeFromName(model.task.name);
     const params = {
-      model: model,
+      model: filterProperty(model),
       task_type: taskType,
       model_display_name: model.name.split("/").at(-1),
       layout: "model",
