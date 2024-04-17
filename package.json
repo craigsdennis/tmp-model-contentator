@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
-    "docs": "npx tsx ./scripts/gen-simple-docs.ts"
+    "docs": "npx tsx ./scripts/gen-simple-docs.ts",
+    "sanity": "npx tsx ./scripts/sanity-check.ts"
   },
   "author": "Craig Dennis <craig@cloudflare.com>",
   "license": "ISC",

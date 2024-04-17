@@ -2,12 +2,18 @@ import * as YAML from "json-to-pretty-yaml";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { modelMappings } from "@cloudflare/ai";
-import 'dotenv/config';
-
+import "dotenv/config";
 
 // pwd in the root of your cloudflare-docs
 const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
 const SHOULD_FILTER_OUT_EXPERIMENTAL = true;
+
+const modelContentPath = path.join(
+  DOCS_ROOT_PATH,
+  "content",
+  "workers-ai",
+  "models"
+);
 
 async function fetchModels() {
   const response = await fetch(
@@ -67,13 +73,13 @@ function filterProperty(model) {
   return clonedModel;
 }
 
-(async () => {
+async function getModelRegistry(shouldFilterOutExperimental) {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
   const schemaDefinitions = getSchemaDefinitions();
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
-    if (SHOULD_FILTER_OUT_EXPERIMENTAL && model.tags.includes("experimental")) {
+    if (shouldFilterOutExperimental && model.tags.includes("experimental")) {
       console.warn(`Ignoring experimental model ${model.name}`);
       return registry;
     }
@@ -90,8 +96,11 @@ function filterProperty(model) {
     registry[`${params.model_display_name}.md`] = YAML.stringify(params);
     return registry;
   }, {});
+  return frontMatters;
+}
 
-  const modelContentPath = path.join(DOCS_ROOT_PATH, "content", "workers-ai", "models");
+(async () => {
+  const frontMatters = await getModelRegistry(SHOULD_FILTER_OUT_EXPERIMENTAL);
   for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
     const filePath = path.join(modelContentPath, fileName);
     fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n`);
