@@ -12,12 +12,14 @@
   "author": "Craig Dennis <craig@cloudflare.com>",
   "license": "ISC",
   "dependencies": {
-    "@cloudflare/ai": "^1.0.53",
+    "@cloudflare/ai": "^1.2.2",
+    "base64-js": "^1.5.1",
     "dotenv": "^16.4.5",
     "json-to-pretty-yaml": "^1.2.2",
-    "typescript": "^5.3.3"
+    "mustache": "^4.2.0",
+    "typescript": "^5.4.5"
   },
   "devDependencies": {
-    "@types/node": "^20.11.19"
+    "@types/node": "^20.12.12"
   }
 }

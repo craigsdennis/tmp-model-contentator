@@ -6,7 +6,6 @@ import "dotenv/config";
 
 // pwd in the root of your cloudflare-docs
 const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
-const SHOULD_FILTER_OUT_EXPERIMENTAL = true;
 
 const modelContentPath = path.join(
   DOCS_ROOT_PATH,
@@ -35,6 +34,7 @@ function taskTypeFromName(taskName) {
   return taskName.toLowerCase().split(" ").join("-");
 }
 
+// TODO: This needs to come from config API!
 function getSchemaDefinitions() {
   const tasks = Object.keys(modelMappings);
   const schemaDefinitions = {};
@@ -53,43 +53,35 @@ function getSchemaDefinitions() {
   return schemaDefinitions;
 }
 
-function isBetaTrue(modelInfo): boolean {
-  const betaProperty = modelInfo.properties.find(
-    (property) => property.property_id === "beta"
-  );
-  if (betaProperty) {
-    return betaProperty.value.toLowerCase() === "true";
+function getProperty(modelInfo, name, defaultValue) {
+  const property = modelInfo.properties.find(prop => prop.property_id === name);
+  if (property === undefined) {
+    return defaultValue;
   }
-  return false; // If beta property is not found, assume false
+  return property.value;
 }
 
-function filterProperty(model) {
-  const clonedModel = { ...model };
-
-  clonedModel.properties = clonedModel.properties.filter(
-    (prop) => prop.property_id !== "constellation_config"
-  );
-
-  return clonedModel;
+function isBeta(modelInfo) {
+  const beta = getProperty(modelInfo, "beta", false);
+  if (beta) {
+    return beta.toLowerCase() === "true";
+  }
+  return beta;
 }
 
-async function getModelRegistry(shouldFilterOutExperimental) {
+async function getModelRegistry() {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
   const schemaDefinitions = getSchemaDefinitions();
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
-    if (shouldFilterOutExperimental && model.tags.includes("experimental")) {
-      console.warn(`Ignoring experimental model ${model.name}`);
-      return registry;
-    }
     const taskType = taskTypeFromName(model.task.name);
     const params = {
-      model: filterProperty(model),
+      model: model,
       task_type: taskType,
       model_display_name: model.name.split("/").at(-1),
       layout: "model",
-      weight: isBetaTrue(model) ? 0 : 100,
+      weight: isBeta(model) ? 0 : 100,
     };
     params["title"] = params.model_display_name;
     params["json_schema"] = schemaDefinitions[taskType] || "";
@@ -100,7 +92,7 @@ async function getModelRegistry(shouldFilterOutExperimental) {
 }
 
 (async () => {
-  const frontMatters = await getModelRegistry(SHOULD_FILTER_OUT_EXPERIMENTAL);
+  const frontMatters = await getModelRegistry();
   for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
     const filePath = path.join(modelContentPath, fileName);
     fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n`);
