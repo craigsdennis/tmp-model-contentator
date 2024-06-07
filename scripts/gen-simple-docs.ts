@@ -1,7 +1,6 @@
 import * as YAML from "json-to-pretty-yaml";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { modelMappings } from "@cloudflare/ai";
 import "dotenv/config";
 
 // pwd in the root of your cloudflare-docs
@@ -15,6 +14,7 @@ const modelContentPath = path.join(
 );
 
 async function fetchModels() {
+  // NOTE: This is not paging
   const response = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${process.env.AUTH_ACCOUNT}/ai/models/search`,
     {
@@ -34,27 +34,43 @@ function taskTypeFromName(taskName) {
   return taskName.toLowerCase().split(" ").join("-");
 }
 
-// TODO: This needs to come from config API!
-function getSchemaDefinitions() {
-  const tasks = Object.keys(modelMappings);
-  const schemaDefinitions = {};
-  for (const task of tasks) {
-    try {
-      const AiClass = modelMappings[task].class;
-      const cls = new AiClass();
-      schemaDefinitions[task] = {
-        input: JSON.stringify(cls.schema.input, null, "  "),
-        output: JSON.stringify(cls.schema.output, null, "  "),
-      };
-    } catch (err) {
-      console.error(err);
+async function getSchemaDefinitionByModelName(modelName) {
+  const response = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${
+      process.env.AUTH_ACCOUNT
+    }/ai/models/schema?model=${encodeURIComponent(modelName)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${process.env.AUTH_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  const json = await response.json();
+  return json.result;
+}
+
+async function getSchemaDefinitions(models) {
+  const schemaRegistry = {};
+  const batchSize = 10;
+  for (let i = 0; i < models.length; i += batchSize) {
+    const batch = models.slice(i, i + batchSize);
+    const batchPromises = batch.map((model) =>
+      getSchemaDefinitionByModelName(model.name)
+    );
+    const batchResults = await Promise.all(batchPromises);
+    for (let j = 0; j < batch.length; j++) {
+      schemaRegistry[batch[j].name] = batchResults[j];
     }
   }
-  return schemaDefinitions;
+  return schemaRegistry;
 }
 
 function getProperty(modelInfo, name, defaultValue) {
-  const property = modelInfo.properties.find(prop => prop.property_id === name);
+  const property = modelInfo.properties.find(
+    (prop) => prop.property_id === name
+  );
   if (property === undefined) {
     return defaultValue;
   }
@@ -72,7 +88,7 @@ function isBeta(modelInfo) {
 async function getModelRegistry() {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
-  const schemaDefinitions = getSchemaDefinitions();
+  const schemaDefinitions = await getSchemaDefinitions(models);
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
     const taskType = taskTypeFromName(model.task.name);
@@ -84,7 +100,11 @@ async function getModelRegistry() {
       weight: isBeta(model) ? 0 : 100,
     };
     params["title"] = params.model_display_name;
-    params["json_schema"] = schemaDefinitions[taskType] || "";
+    const json_schema = schemaDefinitions[model.name];
+    params["json_schema"] = {
+      input: JSON.stringify(json_schema.input, null, "  "),
+      output: JSON.stringify(json_schema.output, null, "  "),
+    };
     registry[`${params.model_display_name}.md`] = YAML.stringify(params);
     return registry;
   }, {});
