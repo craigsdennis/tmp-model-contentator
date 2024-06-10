@@ -13,6 +13,11 @@ const modelContentPath = path.join(
   "models"
 );
 
+const KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES = [
+  '@hf/meta-llama/meta-llama-3-8b-instruct',
+  '@cf/mistral/mistral-7b-instruct-v0.1-vllm',
+];
+
 async function fetchModels() {
   // NOTE: This is not paging
   const response = await fetch(
@@ -91,6 +96,10 @@ async function getModelRegistry() {
   const schemaDefinitions = await getSchemaDefinitions(models);
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
+    if (KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES.includes(model.name)) {
+      console.warn(`Found a known alias that shouldn't be rendered ${model.name}. Notify Workers AI API team.`);
+      return registry;
+    }
     const taskType = taskTypeFromName(model.task.name);
     const params = {
       model: model,
