@@ -14,8 +14,8 @@ const modelContentPath = path.join(
 );
 
 const KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES = [
-  '@hf/meta-llama/meta-llama-3-8b-instruct',
-  '@cf/mistral/mistral-7b-instruct-v0.1-vllm',
+  "@hf/meta-llama/meta-llama-3-8b-instruct",
+  "@cf/mistral/mistral-7b-instruct-v0.1-vllm",
 ];
 
 async function fetchModels() {
@@ -90,14 +90,46 @@ function isBeta(modelInfo) {
   return beta;
 }
 
+function correctSchemas(schemaDefinitions, models) {
+  // Only tool/function calling models have tools
+  const notFunctionCallingEnabled = models.filter(
+    (m) =>
+      m.task.name === "Text Generation" &&
+      getProperty(m, "function_calling", "") !== "true"
+  );
+  for (const model of notFunctionCallingEnabled) {
+    const schemas = schemaDefinitions[model.name];
+    if (schemas.input === undefined) {
+      console.warn(`Missing input schema for ${model.name}`);
+      continue;
+    }
+    // Remove tools
+    for (const oneOf of schemas.input.oneOf) {
+      // TODO: Will this modify in place?
+      console.log(`Removing tools from ${model.name} input schema`);
+      delete oneOf.tools;
+    }
+    for (const oneOf of schemas.output.oneOf) {
+      console.log(`Removing tool_calls from ${model.name} output schema`);
+      delete oneOf.tool_calls;
+    }
+  }
+}
+
 async function getModelRegistry() {
   const models = await fetchModels();
   console.log(`Found ${models.length} models`);
   const schemaDefinitions = await getSchemaDefinitions(models);
+  // Until API is fixed and schemas are by models
+  correctSchemas(schemaDefinitions, models);
   // FileName => frontMatter
   const frontMatters = models.reduce((registry, model) => {
-    if (KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES.includes(model.name)) {
-      console.warn(`Found a known alias that shouldn't be rendered ${model.name}. Notify Workers AI API team.`);
+    if (
+      KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES.includes(model.name)
+    ) {
+      console.warn(
+        `Found a known alias that shouldn't be rendered ${model.name}. Notify Workers AI API team.`
+      );
       return registry;
     }
     const taskType = taskTypeFromName(model.task.name);
