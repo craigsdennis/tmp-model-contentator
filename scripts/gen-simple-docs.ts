@@ -2,6 +2,7 @@ import * as YAML from "json-to-pretty-yaml";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import "dotenv/config";
+import { text } from "stream/consumers";
 
 // pwd in the root of your cloudflare-docs
 const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
@@ -91,11 +92,10 @@ function isBeta(modelInfo) {
 }
 
 function correctSchemas(schemaDefinitions, models) {
+  const textGenModels = models.filter((m) => m.task.name === "Text Generation");
   // Only tool/function calling models have tools
-  const notFunctionCallingEnabled = models.filter(
-    (m) =>
-      m.task.name === "Text Generation" &&
-      getProperty(m, "function_calling", "") !== "true"
+  const notFunctionCallingEnabled = textGenModels.filter(
+    (m) => getProperty(m, "function_calling", "") !== "true"
   );
   for (const model of notFunctionCallingEnabled) {
     const schemas = schemaDefinitions[model.name];
@@ -111,6 +111,20 @@ function correctSchemas(schemaDefinitions, models) {
     for (const oneOf of schemas.output.oneOf) {
       console.log(`Removing tool_calls from ${model.name} output schema`);
       delete oneOf.tool_calls;
+    }
+  }
+  const nonLoraEnabledModels = textGenModels.filter(
+    (m) => getProperty(m, "lora", "") !== "true"
+  );
+  for (const model of nonLoraEnabledModels) {
+    const schemas = schemaDefinitions[model.name];
+    if (schemas.input === undefined) {
+      console.warn(`Missing input schema for ${model.name}`);
+      continue;
+    }
+    for (const oneOf of schemas.input.oneOf) {
+      console.log(`Removing lora from ${model.name} input schema`);
+      delete oneOf.properties.lora;
     }
   }
 }
