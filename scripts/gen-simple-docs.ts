@@ -105,7 +105,6 @@ function correctSchemas(schemaDefinitions, models) {
     }
     // Remove tools
     for (const oneOf of schemas.input.oneOf) {
-      // TODO: Will this modify in place?
       console.log(`Removing tools from ${model.name} input schema`);
       delete oneOf.tools;
     }
