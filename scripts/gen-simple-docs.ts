@@ -105,12 +105,16 @@ function correctSchemas(schemaDefinitions, models) {
     }
     // Remove tools
     for (const oneOf of schemas.input.oneOf) {
-      console.log(`Removing tools from ${model.name} input schema`);
-      delete oneOf.tools;
+      if (oneOf.properties) {
+        console.log(`Removing tools from ${model.name} input schema`);
+        delete oneOf.properties.tools;
+      }
     }
     for (const oneOf of schemas.output.oneOf) {
-      console.log(`Removing tool_calls from ${model.name} output schema`);
-      delete oneOf.tool_calls;
+      if (oneOf.properties) {
+        console.log(`Removing tool_calls from ${model.name} output schema`);
+        delete oneOf.properties.tool_calls;
+      }
     }
   }
   const nonLoraEnabledModels = textGenModels.filter(
