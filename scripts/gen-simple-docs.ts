@@ -9,9 +9,9 @@ const DOCS_ROOT_PATH = process.env.DOCS_ROOT_PATH;
 
 const modelContentPath = path.join(
   DOCS_ROOT_PATH,
+  "src",
   "content",
-  "workers-ai",
-  "models"
+  "workers-ai-models",
 );
 
 const KNOWN_ALIASES_THAT_SHOULD_NOT_BE_SHOWN_AS_MODEL_PAGES = [
@@ -163,7 +163,7 @@ async function getModelRegistry() {
       input: JSON.stringify(json_schema.input, null, "  "),
       output: JSON.stringify(json_schema.output, null, "  "),
     };
-    registry[`${params.model_display_name}.md`] = YAML.stringify(params);
+    registry[`${params.model_display_name}.yaml`] = YAML.stringify(params);
     return registry;
   }, {});
   return frontMatters;
@@ -173,7 +173,7 @@ async function getModelRegistry() {
   const frontMatters = await getModelRegistry();
   for (const [fileName, frontMatter] of Object.entries(frontMatters)) {
     const filePath = path.join(modelContentPath, fileName);
-    fs.writeFileSync(`${filePath}`, `---\n${frontMatter}\n---\n`);
+    fs.writeFileSync(filePath, frontMatter as string);
     console.log(`Wrote ${filePath}`);
   }
 })();
